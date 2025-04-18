@@ -1,0 +1,80 @@
+import Dict.{Dict}
+import Json/Encode
+
+pub type Message<a> struct {
+  specific: a,
+  headers: Dict<String, String>,
+  body: Task<String>,
+}
+
+/// Request data
+pub type Client struct {
+  method: String,
+  url: List<String>,
+  params: List<(String, String)>,
+}
+
+pub let method: Fn(Message<Client>) -> _ = fn req {
+  req.specific.method
+}
+
+pub let url: Fn(Message<Client>) -> _ = fn req {
+  req.specific.url
+}
+
+/// Response data
+pub type Server struct {
+  status: Int,
+}
+
+pub let response = fn status {
+  Message {
+    specific: Server {
+      status: status,
+    },
+    headers: Dict.empty,
+    body: Task.of(""),
+  }
+}
+
+pub let with_async_text_body: Fn(Message<Server>, _) -> _ = fn res, body {
+  Message {
+    body: body,
+    ..res
+  }
+}
+
+pub let with_text_body: Fn(Message<Server>, _) -> _ = fn res, body {
+  with_async_text_body(res, Task.of(body))
+}
+
+pub let with_headers: Fn(Message<Server>, _, _) -> _ = fn res, name, value {
+  Message {
+    headers: Dict.insert(res.headers, name, value),
+    ..res
+  }
+}
+
+pub let with_json_body = fn res, json {
+  let encoded = Json/Encode.encode(json, 0);
+
+  res
+  |> with_text_body(encoded)
+  |> with_headers("Content-Type", "application/json")
+}
+
+pub let body = fn res {
+  res.body
+}
+
+pub let with_status = fn res, status {
+  Message {
+    specific: Server {
+      status: status,
+      ..res.specific
+    },
+    ..res
+  }
+}
+
+extern pub let create_server: Fn(Int, Fn(Message<Client>) -> Task<Message<Server>>) -> Task<Unit>

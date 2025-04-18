@@ -1,0 +1,15 @@
+import Json/Encode
+
+pub(..) type User struct {
+  id: Int,
+  name: String,
+  age: Int,
+}
+
+pub let encode = fn user {
+  Json/Encode.object([
+    ("id", Json/Encode.int(user.id)),
+    ("name", Json/Encode.string(user.name)),
+    ("age", Json/Encode.int(user.age)),
+  ])
+}

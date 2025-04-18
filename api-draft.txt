@@ -1,0 +1,20 @@
+pub let router = |req {
+  match Http.url(req) {
+    ["users", id] => match Http.method(req) {
+      "GET" => get_user(req, id),
+      _ => Http.response(Http/Status.method_not_allowed)->Task.of(),
+    },
+    _ => Http.response(Http/Status.not_found)->Task.of()
+  }
+}
+
+@derive(Json)
+pub(..) struct User {
+  id: String
+}
+
+let get_user = |_req, id| {
+  Http.response(Http/Status.ok)
+  ->Http.with_json_body(User{ id })
+  ->Task.of()
+}

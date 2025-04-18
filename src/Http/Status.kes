@@ -1,0 +1,9 @@
+pub let ok = 200
+
+pub let bad_request = 400
+
+pub let not_found = 404
+
+pub let method_not_allowed = 405
+
+pub let unprocessable_entity = 422

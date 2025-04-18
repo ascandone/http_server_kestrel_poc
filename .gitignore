@@ -1,0 +1,4 @@
+.DS_Store
+
+# The directory where dependencies are downloaded
+/deps/
