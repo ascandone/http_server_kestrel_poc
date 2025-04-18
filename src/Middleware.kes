@@ -1,0 +1,40 @@
+import Http
+import Http/Status
+import Json/Decode
+
+pub let parse_id = fn id, next {
+  match String.parse_int(id) {
+    None => Task.of(Http.response(Http/Status.unprocessable_entity)),
+    Some(parsed_id) => next(parsed_id),
+  }
+}
+
+pub let extract_result = fn result, next {
+  match result {
+    Ok(value) => next(value),
+    Err(response) => Task.of(response),
+  }
+}
+
+pub let decode_body = fn (req, decoder), next {
+  // TODO check headers
+  let#Task.await body = Http.body(req);
+
+  let#extract_result json = Result.map_err(
+    Json/Decode.decode_string(body, Json/Decode.json),
+    fn _ {
+      Http.response(Http/Status.bad_request)
+      |> Http.with_text_body("Invalid json")
+    },
+  );
+
+  let#extract_result parsed_body = Result.map_err(
+    Json/Decode.decode(json, decoder),
+    fn _ {
+      Http.response(Http/Status.unprocessable_entity)
+      |> Http.with_text_body("Error while decoding json")
+    },
+  );
+
+  next(parsed_body)
+}

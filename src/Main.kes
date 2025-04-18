@@ -1,50 +1,11 @@
-import Debug
 import Http
 import Http/Status
 import Json/Decode
+import Middleware
 import Model/User.{User}
 
-let parse_id = fn id, next {
-  match String.parse_int(id) {
-    None => Task.of(Http.response(Http/Status.unprocessable_entity)),
-    Some(parsed_id) => next(parsed_id),
-  }
-}
-
-let extract_result = fn result, next {
-  match result {
-    Ok(value) => next(value),
-    Err(response) => Task.of(response),
-  }
-}
-
-let decode_body = fn (req, decoder), next {
-  // TODO check headers
-  let#Task.await body = Http.body(req);
-
-  let#extract_result json = Result.map_err(
-    Json/Decode.decode_string(body, Json/Decode.json),
-    fn e {
-      let _ = Debug.log(e, "err");
-
-      Http.response(Http/Status.bad_request)
-      |> Http.with_text_body("Invalid json")
-    },
-  );
-
-  let#extract_result parsed_body = Result.map_err(
-    Json/Decode.decode(json, decoder),
-    fn _ {
-      Http.response(Http/Status.unprocessable_entity)
-      |> Http.with_text_body("Error while decoding json")
-    },
-  );
-
-  next(parsed_body)
-}
-
 let get_user = fn _req, id {
-  let#parse_id id = id;
+  let#Middleware.parse_id id = id;
 
   let user = User {
     id: id,
@@ -72,7 +33,7 @@ let user_body_decoder = {
 }
 
 let create_user = fn req {
-  let#decode_body parsed_body = (req, user_body_decoder);
+  let#Middleware.decode_body parsed_body = (req, user_body_decoder);
 
   let user = User {
     id: 42,
